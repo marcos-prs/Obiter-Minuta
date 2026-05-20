@@ -1,0 +1,59 @@
+Plano da API de Minutas
+
+A API do ObiterJus, neste módulo, não é só uma ponte para IA. Ela é o interceptador jurídico: recebe o documento bruto, converte, interpreta e devolve apenas o material estruturado para o app.
+
+Papel da API
+
+Receber o arquivo enviado pela extensão.
+Processar o documento em memória ou armazenamento efêmero.
+Converter para Markdown e JSON base.
+Rodar a etapa semântica com IA dentro da própria API.
+Validar a saída.
+Descartar o PDF bruto.
+Entregar ao app apenas o pacote estruturado.
+Fluxo
+
+O advogado arrasta o PDF na extensão.
+A extensão envia o arquivo para a API junto com o tipo declarado da peça.
+A API faz a conversão inicial para texto estruturado.
+Uma etapa semântica interpreta o conteúdo.
+A API identifica fatos, preliminares, pedidos, teses, provas e trechos de suporte.
+A API valida o schema e marca campos incertos.
+O PDF bruto é descartado.
+O app recebe só md/json, metadados e referências internas.
+Entradas
+
+PDF ou arquivo jurídico bruto.
+Tipo declarado: inicial, contestação, tutela, réplica, recurso etc.
+Dados cadastrais do processo.
+Identificadores de origem e contexto.
+Saídas
+
+Markdown limpo da peça.
+JSON estruturado.
+Tipo da peça detectado ou confirmado.
+Lista de fatos, preliminares, pedidos, teses e provas.
+Nível de confiança por campo.
+Lacunas e pontos para revisão.
+Referências internas de origem.
+Regras
+
+Não pedir resumo manual ao advogado.
+Não guardar o PDF de forma durável.
+Não inventar campos sem base documental.
+Não devolver só texto livre.
+Sempre manter trilha de origem e versão.
+Componentes
+
+Endpoint de ingestão.
+Conversor de documento.
+Etapa de interpretação semântica com IA.
+Validador de schema.
+Gerador de resposta estruturada.
+Log de auditoria mínimo.
+Critério de sucesso
+
+O advogado envia com poucos cliques.
+O app nunca recebe o PDF bruto.
+A saída é consistente, auditável e reaproveitável.
+Campos incertos aparecem como incertos, não como suposição.
