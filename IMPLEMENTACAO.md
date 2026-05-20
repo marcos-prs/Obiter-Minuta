@@ -13,7 +13,7 @@ API intermediária que recebe peças jurídicas em PDF, processa via IA, e devol
 | Linguagem | Python 3.12 | Ecossistema maduro para PDF e IA |
 | Framework | FastAPI | Async nativo, validação Pydantic, docs automáticos |
 | Servidor | Uvicorn + Gunicorn | ASGI performático para uploads |
-| IA | Anthropic Claude API (claude-opus-4-7) | Interpretação semântica jurídica |
+| IA | Google Gemini API (gemini-3.1-flash-lite) | Interpretação semântica jurídica |
 | PDF | pdfplumber + pymupdf | Extração de texto com layout |
 | Armazenamento efêmero | Redis (TTL 15min) | Descarte automático do PDF bruto |
 | Fila de processamento | Celery + Redis | Processamento assíncrono de documentos grandes |
@@ -42,7 +42,7 @@ obiter-minuta-api/
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── converter.py         # PDF → texto estruturado
-│   │   ├── semantic.py          # Interpretação com Claude
+│   │   ├── semantic.py          # Interpretação com Gemini
 │   │   ├── validator.py         # Validação do schema de saída
 │   │   └── packager.py          # Montagem do pacote final
 │   │
@@ -268,7 +268,7 @@ class TipoPeca(str, Enum):
 
   "auditoria": {
     "hash_arquivo_entrada": "sha256:e3b0c44298fc1c14...",
-    "modelo_ia": "claude-opus-4-7",
+    "modelo_ia": "gemini-3.1-flash-lite",
     "versao_conversor": "1.2.0",
     "pdf_descartado": true
   }
@@ -333,11 +333,11 @@ class MinutaPackage(BaseModel):
       │
       ▼
   [Task: semantic.py]
-  Prompt para Claude com:
+  Prompt para Gemini com:
   - Markdown da peça
   - Tipo declarado
   - Schema esperado como JSON
-  Claude retorna JSON estruturado
+  Gemini retorna JSON estruturado
       │
       ▼
   [Task: validator.py]
@@ -378,7 +378,7 @@ pdfplumber==0.11.0
 pymupdf==1.24.0
 
 # IA
-anthropic==0.34.0
+google-genai==1.16.0
 
 # Fila e cache
 celery==5.4.0
@@ -409,8 +409,8 @@ SECRET_KEY=change_me_in_production
 API_VERSION=v1
 
 # IA
-ANTHROPIC_API_KEY=sk-ant-...
-CLAUDE_MODEL=claude-opus-4-7
+GOOGLE_API_KEY=AIza...
+GEMINI_MODEL=gemini-3.1-flash-lite
 
 # Redis
 REDIS_URL=redis://localhost:6379/0
@@ -434,7 +434,7 @@ LOG_LEVEL=INFO
 2. **Campos incertos são marcados, não inventados** — confiança < 0.7 vai para `qualidade.campos_incertos`.
 3. **Trilha de auditoria mínima** — todo job registra `hash_arquivo_entrada`, `modelo_ia`, `versao_conversor`.
 4. **Sem texto livre solto** — toda saída passa pelo schema Pydantic; resposta sem schema válido retorna erro 422.
-5. **Tipo detectado vs. declarado** — Claude reconfirma o tipo; divergência fica em `metadados.tipo_confirmado: false`.
+5. **Tipo detectado vs. declarado** — Gemini reconfirma o tipo; divergência fica em `metadados.tipo_confirmado: false`.
 6. **Processamento assíncrono** — uploads retornam 202 imediatamente; cliente faz polling em `/status/{job_id}`.
 
 ---

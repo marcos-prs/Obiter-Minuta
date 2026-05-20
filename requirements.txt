@@ -12,7 +12,7 @@ pdfplumber==0.11.0
 pymupdf==1.24.0
 
 # IA
-anthropic==0.34.0
+google-genai==1.16.0
 
 # Fila e cache
 celery==5.4.0

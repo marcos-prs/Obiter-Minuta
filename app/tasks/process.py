@@ -109,7 +109,7 @@ def process_document(
         _update_stage(job_id, "done", 100)
         _set_status(job_id, "completed")
 
-        log_job_completed(job_id, settings.claude_model, CONVERTER_VERSION)
+        log_job_completed(job_id, settings.gemini_model, CONVERTER_VERSION)
 
         return {"job_id": job_id, "status": "completed"}
 

@@ -1,5 +1,5 @@
 import json
-from anthropic import Anthropic
+from google import genai
 from app.config import get_settings
 
 SYSTEM_PROMPT = """Voce e um assistente juridico especializado em analisar pecas processuais brasileiras.
@@ -23,7 +23,7 @@ def analyze_semantic(
     origem: str | None = None,
 ) -> dict:
     settings = get_settings()
-    client = Anthropic(api_key=settings.anthropic_api_key)
+    client = genai.Client(api_key=settings.google_api_key)
 
     context_parts = [f"Tipo declarado: {tipo_declarado}"]
     if numero_processo:
@@ -56,15 +56,16 @@ Retorne o JSON seguindo exatamente este schema:
   "lacunas": ["string"]
 }}"""
 
-    message = client.messages.create(
-        model=settings.claude_model,
-        max_tokens=8192,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+    response = client.models.generate_content(
+        model=settings.gemini_model,
+        contents=prompt,
+        config={
+            "system_instruction": SYSTEM_PROMPT,
+            "max_output_tokens": 8192,
+        },
     )
 
-    content = message.content[0].text
-    return _parse_json_response(content)
+    return _parse_json_response(response.text)
 
 
 def _parse_json_response(content: str) -> dict:

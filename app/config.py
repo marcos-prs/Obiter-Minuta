@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     secret_key: str = "change_me_in_production"
     api_version: str = "v1"
 
-    anthropic_api_key: str = ""
-    claude_model: str = "claude-opus-4-7"
+    google_api_key: str = ""
+    gemini_model: str = "gemini-3.1-flash-lite"
 
     redis_url: str = "redis://localhost:6379/0"
     job_ttl_minutes: int = 15
