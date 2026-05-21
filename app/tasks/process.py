@@ -15,6 +15,13 @@ from app.utils.audit import (
     log_job_completed,
     log_job_failed,
 )
+from app.db.engine import get_session_factory
+from app.db.repository import (
+    create_job,
+    update_job_completed,
+    update_job_failed,
+    append_audit,
+)
 
 settings = get_settings()
 
@@ -56,7 +63,14 @@ def process_document(
     pdf_bytes = base64.b64decode(pdf_b64)
     file_hash = compute_file_hash(pdf_bytes)
 
+    Session = get_session_factory()
+
     try:
+        with Session() as db:
+            create_job(db, job_id, tipo_declarado, numero_processo,
+                       vara, origem, file_hash)
+            append_audit(db, job_id, "job_started")
+
         self.update_state(
             state="PROGRESS",
             meta={"job_id": job_id, "stage": "conversion", "progress_pct": 10},
@@ -116,6 +130,22 @@ def process_document(
 
         log_pdf_discarded(job_id)
 
+        with Session() as db:
+            update_job_completed(
+                db, job_id,
+                tipo_detectado=minuta.metadados.tipo_detectado or tipo_declarado,
+                tipo_confirmado=minuta.metadados.tipo_confirmado,
+                paginas=page_count,
+                confianca_geral=minuta.qualidade.confianca_geral,
+                requer_revisao=minuta.qualidade.requer_revisao,
+                modelo_ia=settings.gemini_model,
+            )
+            append_audit(db, job_id, "pdf_discarded", {"pdf_descartado": True})
+            append_audit(db, job_id, "job_completed", {
+                "modelo_ia": settings.gemini_model,
+                "versao_conversor": CONVERTER_VERSION,
+            })
+
         _update_stage(job_id, "done", 100)
         _set_status(job_id, "completed")
 
@@ -124,6 +154,9 @@ def process_document(
         return {"job_id": job_id, "status": "completed"}
 
     except Exception as e:
+        with Session() as db:
+            update_job_failed(db, job_id, str(e))
+            append_audit(db, job_id, "job_failed", {"error": str(e)})
         _set_status(job_id, "failed")
         log_job_failed(job_id, str(e))
         raise

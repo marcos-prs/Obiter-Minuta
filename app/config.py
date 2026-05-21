@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     gemini_model: str = "gemini-3.1-flash-lite"
 
+    database_url: str = ""
     redis_url: str = "redis://localhost:6379/0"
     job_ttl_minutes: int = 15
     result_ttl_hours: int = 2
