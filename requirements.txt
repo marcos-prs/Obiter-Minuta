@@ -1,32 +1,15 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.0
-gunicorn==22.0.0
-pydantic[email]==2.8.0
-pydantic-settings==2.4.0
-
-# Upload e processamento de arquivos
-python-multipart==0.0.9
-
-# PDF
-pdfplumber==0.11.0
-pymupdf==1.24.0
-
-# IA
-google-genai==1.16.0
-
-# Fila e cache
-celery==5.4.0
-redis==5.1.0
-
-# Auth
-python-jose[cryptography]==3.3.0
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+gunicorn==26.0.0
+pydantic==2.13.4
+pydantic-settings==2.14.0
+python-multipart==0.0.27
+pdfplumber==0.11.9
+pymupdf==1.27.2.3
+google-genai==1.75.0
+celery==5.6.3
+redis==7.4.0
+python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
-
-# Observabilidade
-structlog==24.4.0
-sentry-sdk[fastapi]==2.13.0
-
-# Dev/teste
-pytest==8.3.0
-pytest-asyncio==0.24.0
-httpx==0.27.0
+structlog==25.5.0
+sentry-sdk[fastapi]==2.58.0

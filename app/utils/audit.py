@@ -15,9 +15,8 @@ def log_audit_event(
     details: dict | None = None,
 ) -> None:
     logger.info(
-        "audit_event",
+        event,  # primeiro arg = event no structlog; não repetir como kwarg
         job_id=job_id,
-        event=event,
         timestamp=datetime.now(timezone.utc).isoformat(),
         **(details or {}),
     )

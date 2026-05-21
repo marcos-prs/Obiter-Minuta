@@ -4,9 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from app.dependencies import verify_token, get_redis
-from app.schemas.input import TipoPeca, IngestResponse, JOB_STATUS_KEY
+from app.schemas.input import TipoPeca, IngestResponse, JOB_STATUS_KEY, JOB_PDF_KEY
 from app.tasks.process import process_document
-from app.utils.audit import log_job_created, compute_file_hash
+from app.utils.audit import log_job_created
 from app.config import get_settings, Settings
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
@@ -41,8 +41,11 @@ async def ingest_document(
 
     job_id = f"j_{uuid.uuid4().hex[:12]}"
 
-    pdf_b64 = base64.b64encode(content).decode()
     ttl = settings.job_ttl_minutes * 60
+
+    # PDF salvo no Redis como base64 com TTL controlado — nunca vai para args do Celery
+    pdf_b64 = base64.b64encode(content).decode()
+    redis.setex(JOB_PDF_KEY.format(job_id=job_id), ttl, pdf_b64)
 
     status_data = {
         "job_id": job_id,
@@ -54,15 +57,9 @@ async def ingest_document(
     redis.setex(JOB_STATUS_KEY.format(job_id=job_id), ttl, json.dumps(status_data))
 
     process_document.apply_async(
-        args=[
-            job_id,
-            pdf_b64,
-            tipo_declarado.value,
-            numero_processo,
-            vara,
-            origem,
-        ],
+        args=[job_id, tipo_declarado.value, numero_processo, vara, origem],
         task_id=job_id,
+        expires=ttl,  # expira a task se o worker não pegar dentro do TTL do PDF
     )
 
     log_job_created(job_id, tipo_declarado.value, origem)

@@ -49,3 +49,4 @@ class JobStage(str, Enum):
 
 JOB_STATUS_KEY = "job:{job_id}:status"
 JOB_RESULT_KEY = "job:{job_id}:result"
+JOB_PDF_KEY = "job:{job_id}:pdf"

@@ -4,7 +4,7 @@ import redis
 from datetime import datetime, timezone
 from celery import Celery
 from app.config import get_settings
-from app.schemas.input import JOB_STATUS_KEY, JOB_RESULT_KEY
+from app.schemas.input import JOB_STATUS_KEY, JOB_RESULT_KEY, JOB_PDF_KEY
 from app.services.converter import convert_pdf_to_markdown, CONVERTER_VERSION
 from app.services.semantic import analyze_semantic
 from app.services.validator import validate_and_enrich
@@ -41,13 +41,19 @@ redis_client = redis.from_url(settings.redis_url, decode_responses=True)
 def process_document(
     self,
     job_id: str,
-    pdf_bytes_b64: str,
     tipo_declarado: str,
     numero_processo: str | None = None,
     vara: str | None = None,
     origem: str | None = None,
 ) -> dict:
-    pdf_bytes = base64.b64decode(pdf_bytes_b64)
+    # Lê PDF do Redis e o remove imediatamente — garante descarte controlado com TTL
+    pdf_b64 = redis_client.get(JOB_PDF_KEY.format(job_id=job_id))
+    if not pdf_b64:
+        _set_status(job_id, "failed")
+        raise ValueError(f"PDF expirado ou nao encontrado para job {job_id}")
+
+    redis_client.delete(JOB_PDF_KEY.format(job_id=job_id))
+    pdf_bytes = base64.b64decode(pdf_b64)
     file_hash = compute_file_hash(pdf_bytes)
 
     try:
@@ -58,6 +64,12 @@ def process_document(
         _update_stage(job_id, "conversion", 10)
 
         markdown, page_count = convert_pdf_to_markdown(pdf_bytes)
+
+        # Fix 3 — aplica limite de páginas
+        if page_count > settings.max_pages:
+            raise ValueError(
+                f"Documento com {page_count} paginas excede o limite de {settings.max_pages}"
+            )
 
         self.update_state(
             state="PROGRESS",
@@ -89,7 +101,7 @@ def process_document(
             vara=vara,
             origem=origem,
             file_hash=file_hash,
-            modelo_ia=settings.claude_model,
+            modelo_ia=settings.gemini_model,
         )
 
         self.update_state(
@@ -102,8 +114,6 @@ def process_document(
         result_ttl = settings.result_ttl_hours * 3600
         redis_client.setex(JOB_RESULT_KEY.format(job_id=job_id), result_ttl, result_json)
 
-        del pdf_bytes
-        del pdf_bytes_b64
         log_pdf_discarded(job_id)
 
         _update_stage(job_id, "done", 100)
