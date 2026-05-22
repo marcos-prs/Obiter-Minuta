@@ -1,0 +1,20 @@
+# Fly.io config — apenas worker Celery (API continua no Render)
+app = "obiter-minuta-worker"
+primary_region = "gru"  # São Paulo
+
+[build]
+  dockerfile = "Dockerfile"
+
+[processes]
+  worker = "celery -A app.tasks.process worker --loglevel=info --concurrency=2"
+
+# Sem [http_service] — workers não expõem porta
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[deploy]
+  release_command = "python -m alembic upgrade head"

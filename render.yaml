@@ -1,3 +1,8 @@
+# Render — apenas a API web
+# Worker está no Fly.io (fly.toml)
+# Redis está no Upstash (URL externa nas envVars)
+# PostgreSQL está no Neon
+
 services:
   - type: web
     name: obiter-minuta-api
@@ -14,12 +19,9 @@ services:
       - key: GEMINI_MODEL
         value: gemini-3.1-flash-lite
       - key: REDIS_URL
-        fromService:
-          name: obiter-minuta-redis
-          type: redis
-          property: connectionString
+        sync: false  # Upstash URL externa
       - key: DATABASE_URL
-        sync: false
+        sync: false  # Neon URL
       - key: JOB_TTL_MINUTES
         value: "15"
       - key: RESULT_TTL_HOURS
@@ -32,44 +34,3 @@ services:
         value: INFO
       - key: SENTRY_DSN
         sync: false
-
-  - type: worker
-    name: obiter-minuta-worker
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    plan: free
-    dockerCommand: celery -A app.tasks.process worker --loglevel=info --concurrency=2
-    envVars:
-      - key: APP_ENV
-        value: production
-      - key: SECRET_KEY
-        fromService:
-          name: obiter-minuta-api
-          type: web
-          envVarKey: SECRET_KEY
-      - key: GOOGLE_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: gemini-3.1-flash-lite
-      - key: REDIS_URL
-        fromService:
-          name: obiter-minuta-redis
-          type: redis
-          property: connectionString
-      - key: DATABASE_URL
-        sync: false
-      - key: JOB_TTL_MINUTES
-        value: "15"
-      - key: RESULT_TTL_HOURS
-        value: "2"
-      - key: MAX_PDF_SIZE_MB
-        value: "50"
-      - key: MAX_PAGES
-        value: "150"
-      - key: LOG_LEVEL
-        value: INFO
-
-  - type: redis
-    name: obiter-minuta-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
